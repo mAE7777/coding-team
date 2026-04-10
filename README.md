@@ -1,9 +1,9 @@
 # Claude Code Pipeline
 
-A development pipeline for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview). Five skills that chain together to take a project from research to validated implementation.
+A development pipeline for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview). Six skills that chain together to take a project from research to deployment.
 
 ```
-/scout → /plan → /dev → /qa
+/scout → /plan → /dev → /qa → /deploy
                          │
                          └→ /fix (then re-run /qa)
 ```
@@ -17,10 +17,13 @@ A development pipeline for [Claude Code](https://docs.anthropic.com/en/docs/clau
 | `/dev N` | Implement phase N — each task runs in a fresh subagent for clean context |
 | `/qa N` | Adversarial validation across 8 categories (regression, functional, security, a11y, etc.) |
 | `/fix` | Targeted bug fixes scoped to ~15 files, with root cause analysis |
+| `/deploy` | Deployment readiness verification, changelog generation, and release execution |
 
 ## Architecture
 
 **Skills**: Each skill is a markdown file (`SKILL.md`) that instructs Claude how to behave at each stage. Skills load references on demand and delegate heavy work to subagents.
+
+**Stack Packs** (`_shared/references/stacks/`): Language-specific knowledge loaded automatically when the project's tech stack is detected. Provides conventions, toolchain commands, safety patterns, anti-patterns, and testing patterns for Rust, Python, Go, Swift/iOS, and more. See `stacks/README.md` for how to add new languages.
 
 **Subagents** (8 total):
 
@@ -91,6 +94,12 @@ Design doc or idea
     ├─ PASS ───► /dev N+1 (next phase)
     ├─ COND ───► address issues, then continue
     └─ FAIL ───► /fix → re-run /qa
+
+All phases PASS:
+    │
+    ▼
+/deploy ──────► release-checklist.md, CHANGELOG.md
+                Deployment + post-deploy verification
 ```
 
 **Key concepts:**
@@ -115,8 +124,18 @@ pipeline/
 │   ├── dev/            (SKILL.md + 6 references + 1 asset)
 │   ├── qa/             (SKILL.md + 5 references + 2 assets)
 │   ├── fix/            (SKILL.md + 3 references)
+│   ├── deploy/         (SKILL.md + 3 references + 1 asset)
 │   └── _shared/
-│       ├── references/ (3 files: constitution, state protocol, testing archetypes)
+│       ├── references/
+│       │   ├── stacks/         (language-specific knowledge packs)
+│       │   │   ├── rust.md, python.md, go.md, swift-ios.md
+│       │   │   └── README.md   (template for adding new languages)
+│       │   ├── testing-strategy-archetypes.md (A-F)
+│       │   ├── ai-output-determinism.md
+│       │   ├── user-journey-simulation.md
+│       │   ├── request-emission-guide.md
+│       │   ├── pipeline-constitution.md
+│       │   └── pipeline-state-protocol.md
 │       ├── ground.md
 │       └── owner-profile.md
 ├── agents/             (8 agent definitions)

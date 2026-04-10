@@ -39,6 +39,7 @@ Before copying, check if any of these already exist:
 - `{BASE}/skills/dev/`
 - `{BASE}/skills/qa/`
 - `{BASE}/skills/fix/`
+- `{BASE}/skills/deploy/`
 - `{BASE}/agents/dev-planner.md`
 - `{BASE}/agents/task-implementer.md`
 - `{BASE}/hooks/guard-dangerous-commands.sh`
@@ -53,7 +54,7 @@ If conflicts exist, tell the user which files already exist and ask:
 
 Copy the following files from this repository into `{BASE}/`. Preserve the directory structure exactly.
 
-### Skills (5 directories)
+### Skills (6 directories)
 
 ```
 skills/scout/SKILL.md
@@ -97,14 +98,29 @@ skills/fix/SKILL.md
 skills/fix/references/pipeline-integration.md
 skills/fix/references/root-cause-catalogs.md
 skills/fix/references/triage-criteria.md
+
+skills/deploy/SKILL.md
+skills/deploy/references/checklist-generation-guide.md
+skills/deploy/references/deployment-failure-patterns.md
+skills/deploy/references/deployment-targets.md
+skills/deploy/assets/release-checklist-template.md
 ```
 
-### Shared References and Config (5 files)
+### Shared References and Config
 
 ```
 skills/_shared/references/pipeline-constitution.md
 skills/_shared/references/pipeline-state-protocol.md
 skills/_shared/references/testing-strategy-archetypes.md
+skills/_shared/references/ai-output-determinism.md
+skills/_shared/references/user-journey-simulation.md
+skills/_shared/references/request-emission-guide.md
+skills/_shared/references/port-registry.md
+skills/_shared/references/stacks/README.md
+skills/_shared/references/stacks/rust.md
+skills/_shared/references/stacks/python.md
+skills/_shared/references/stacks/go.md
+skills/_shared/references/stacks/swift-ios.md
 skills/_shared/ground.md
 skills/_shared/owner-profile.md
 ```
@@ -250,7 +266,7 @@ Then update `owner-profile.md` with their answers.
 
 Run these checks and report results:
 
-1. **File count**: Verify all 56 pipeline files exist in their expected locations (5 SKILL.md + 27 skill references + 6 skill assets + 5 shared files + 8 agents + 7 hooks = 58; minus install.sh/README.md/SETUP.md/settings.json which stay in the repo)
+1. **File count**: Verify all pipeline files exist in their expected locations (6 SKILL.md + 31 skill references + 7 skill assets + 14 shared files + 8 agents + 7 hooks; minus install.sh/README.md/SETUP.md/settings.json which stay in the repo)
 2. **Hook permissions**: Verify all 7 hooks are executable (`ls -la {BASE}/hooks/*.sh`)
 3. **Settings merge**: Verify hooks are registered in `{BASE}/settings.json`
 4. **Quick smoke test**:
@@ -262,7 +278,7 @@ Run these checks and report results:
 Report the results as a checklist:
 
 > **Installation verified:**
-> - [x] Skills installed (scout, plan, dev, qa, fix)
+> - [x] Skills installed (scout, plan, dev, qa, fix, deploy)
 > - [x] Shared references installed (constitution, state protocol, testing archetypes)
 > - [x] 8 agents installed
 > - [x] 7 hooks installed and executable
@@ -288,6 +304,7 @@ At the end, always show this reference:
 > {BASE}/skills/dev/SKILL.md         — /dev N  (phase implementation)
 > {BASE}/skills/qa/SKILL.md          — /qa N   (phase validation)
 > {BASE}/skills/fix/SKILL.md         — /fix    (bug fixes)
+> {BASE}/skills/deploy/SKILL.md      — /deploy (deployment & release)
 > ```
 >
 > **Agents** — invoked automatically by skills:
@@ -319,7 +336,8 @@ At the end, always show this reference:
 > {BASE}/skills/_shared/ground.md                           — 4 ground rules
 > {BASE}/skills/_shared/references/pipeline-constitution.md — core principles
 > {BASE}/skills/_shared/references/pipeline-state-protocol.md — state management
-> {BASE}/skills/_shared/references/testing-strategy-archetypes.md — testing modes
+> {BASE}/skills/_shared/references/testing-strategy-archetypes.md — testing modes (A-F)
+> {BASE}/skills/_shared/references/stacks/                  — language-specific knowledge packs
 > ```
 >
 > **Settings**:

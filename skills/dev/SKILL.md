@@ -174,11 +174,12 @@ Invoke the `dev-planner` subagent to perform heavy context loading, codebase exp
    - Read `~/.claude/agents/dev-planner.md` → `{planner_protocol}`
    - Read `~/.claude/skills/_shared/deep-knowledge.md` → `{patterns_content}` (use `"(not found)"` if absent)
    - Read `~/.claude/skills/dev/references/plan-mode-protocol.md` → `{plan_mode_content}`
+   - If `phases.md` → `## Project Strategy` contains a `Stack Pack:` field (e.g., `stacks/rust.md`), read the referenced file at `~/.claude/skills/_shared/references/stacks/{name}.md` → `{stack_content}` (use `"(not found)"` if absent or file doesn't exist)
 
 2. Invoke `dev-planner` subagent via the Task tool with:
    - `subagent_type`: `"general-purpose"`
    - `model`: `"opus"` (planning requires high reasoning)
-   - Prompt: include the full planner protocol and reference files inline (wrapped in XML tags: `<planner-protocol>`, `<deep-knowledge>`, `<plan-mode-protocol>`), provide the phase number and project root path, instruct the agent to skip reading these files from disk and use the provided content instead
+   - Prompt: include the full planner protocol and reference files inline (wrapped in XML tags: `<planner-protocol>`, `<deep-knowledge>`, `<plan-mode-protocol>`, and `<stack-knowledge>` if stack pack was loaded), provide the phase number and project root path, instruct the agent to skip reading these files from disk and use the provided content instead. The stack knowledge provides language-specific conventions, safety patterns, and anti-patterns that should be applied as additional constraints during convention scanning and task planning
    - The subagent reads phases.md, all prior key-learnings (project-local files it CAN access), performs three-pass codebase exploration, synthesizes cross-phase patterns from key-learnings, and returns the plan content as text
 
 3. After the subagent completes, write the returned content to `dev-plan-phase-{NN}.md` at the project root using the Write tool.
@@ -258,6 +259,7 @@ Each task runs in a fresh `task-implementer` subagent with its own context windo
 
 0b. **Pre-read for subagent context**:
    - Read `~/.claude/skills/_shared/deep-knowledge.md` → `{deep_knowledge}` (use `"(not found)"` if absent)
+   - If phases.md `## Project Strategy` contains a `Stack Pack:` field, read the referenced file at `~/.claude/skills/_shared/references/stacks/{name}.md` → `{stack_knowledge}` (use `"(not found)"` if absent or file doesn't exist)
    - Extract the Accumulated Context section from the plan file → `{conventions}`
 
 0c. Initialize accumulated task summaries: `prior_tasks = ""`
@@ -305,7 +307,9 @@ For each task in the approved order:
      <conventions>{from plan file Accumulated Context}</conventions>
      <prior-tasks>{accumulated 1-line summaries from completed tasks}</prior-tasks>
      <deep-knowledge>{pre-read content}</deep-knowledge>
+     <stack-knowledge>{stack pack content if loaded, omit tag entirely if not}</stack-knowledge>
      ```
+   - If `{stack_knowledge}` was loaded: instruct the task-implementer to treat its Anti-Patterns section as hard constraints (violations are bugs) and its Safety Patterns as mandatory checks before reporting COMPLETE
    - Include the full task-implementer protocol instructions (from `~/.claude/agents/task-implementer.md`, pre-read once at stage start)
 
 6. **Process subagent result**:

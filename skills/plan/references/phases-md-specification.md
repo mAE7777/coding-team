@@ -103,9 +103,10 @@ Added during Phase 1c when the project uses a non-standard testing archetype or 
 
 | Field | Value |
 |-------|-------|
-| Testing Archetype | A (Standard) / B (Hardware) / C (Perception) / D (Data Pipeline) |
+| Testing Archetype | A (Standard) / B (Hardware) / C (Perception) / D (Data Pipeline) / E (Compiled) / F (Mobile) |
 | Verification Mode | per-phase / incremental |
 | Max Task Duration | {from testing-strategy-archetypes.md sizing table} |
+| Stack Pack | stacks/{name}.md, or "None" — loaded from `_shared/references/stacks/` |
 | AI Features | {count, or "None"} |
 ```
 

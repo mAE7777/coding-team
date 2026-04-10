@@ -61,6 +61,39 @@ transform, extract, load, normalize, aggregate, deduplicate.
 **Verification**: Schema check + spot-check values after each transformation.
 **Phase boundary**: When a transformation produces correct output.
 
+### Archetype E: Build-Then-Test (Compiled Systems)
+
+**Pattern**: Compilation is a meaningful quality gate. Build must succeed before tests run.
+
+**Signals**: Cargo.toml (Rust), go.mod (Go), CMakeLists.txt (C/C++), *.csproj (C#).
+Compiled binaries, static linking. Keywords: build, compile, link, binary, target.
+
+**Phase size**: 3-5 tasks, 30min-2hr per task.
+**Verification**: Build + lint + test + sanitizers after each task. Build failure
+is a hard gate — do not proceed until it compiles.
+**Phase boundary**: When a module compiles, passes tests, and passes linter.
+**Key rule**: The compiler is the first reviewer. Compiler warnings treated as errors
+(`-D warnings` for clippy, `-Werror` for GCC/clang). Run race detectors where
+available (`go test -race`, `cargo test` with ASAN).
+
+### Archetype F: Simulator-Verified (Mobile Apps)
+
+**Pattern**: Each UI change must be verified on simulator/emulator. Screenshots
+for visual regression.
+
+**Signals**: .xcodeproj, Package.swift, build.gradle, build.gradle.kts,
+AndroidManifest.xml. Keywords: iOS, Android, SwiftUI, Jetpack Compose, UIKit,
+storyboard, simulator, emulator.
+
+**Phase size**: 2-4 tasks, 30min-1hr per task.
+**Verification**: Build + run on simulator/emulator + visual check after each task.
+Human review required for UI changes (screenshots, not just test pass).
+**Phase boundary**: When a single screen or interaction flow works correctly on simulator.
+**Key rule**: Never batch-write UI components. Build one view, verify on simulator,
+then build the next. Layout bugs compound — catching them early saves 10x rework.
+Platform-specific concerns: permissions, app lifecycle, background/foreground
+transitions must be tested explicitly, not assumed from unit tests.
+
 ---
 
 ## Detection Algorithm
@@ -82,6 +115,16 @@ DATA PIPELINE (Archetype D):
   +2 if ETL patterns detected
   +2 if sequential transformation chains
   +1 if schema definitions present
+
+COMPILED (Archetype E):
+  +3 if Cargo.toml, go.mod, or CMakeLists.txt detected
+  +2 if compiled binary output (no interpreted runtime)
+  +1 if keywords: build, compile, link, binary, static
+
+MOBILE (Archetype F):
+  +3 if .xcodeproj, Package.swift, build.gradle detected
+  +2 if iOS/Android target (simulator/emulator in workflow)
+  +1 if keywords: SwiftUI, Jetpack Compose, UIKit, storyboard
 
 STANDARD (Archetype A — default):
   +1 if web framework detected

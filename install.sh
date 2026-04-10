@@ -29,15 +29,15 @@ echo "  Claude Code Pipeline Installer"
 echo "  ==============================="
 echo ""
 echo "  This will install into ~/.claude/:"
-echo "    - 5 pipeline skills (scout, plan, dev, qa, fix)"
+echo "    - 6 pipeline skills (scout, plan, dev, qa, fix, deploy)"
 echo "    - 8 subagents"
 echo "    - 7 hooks"
-echo "    - 3 shared references"
+echo "    - Shared references + language stack packs"
 echo ""
 
 # Check for existing installations
 CONFLICTS=()
-for skill in scout plan dev qa fix; do
+for skill in scout plan dev qa fix deploy; do
     if [ -d "$CLAUDE_DIR/skills/$skill" ]; then
         CONFLICTS+=("skills/$skill")
     fi
@@ -67,7 +67,7 @@ echo ""
 # ── Skills ──────────────────────────────────────────────────────────────────
 info "Installing skills..."
 
-for skill in scout plan dev qa fix; do
+for skill in scout plan dev qa fix deploy; do
     mkdir -p "$CLAUDE_DIR/skills/$skill"
     cp -r "$SCRIPT_DIR/skills/$skill/"* "$CLAUDE_DIR/skills/$skill/"
     info "  $skill"
@@ -78,6 +78,13 @@ info "Installing shared references..."
 
 mkdir -p "$CLAUDE_DIR/skills/_shared/references"
 cp "$SCRIPT_DIR/skills/_shared/references/"*.md "$CLAUDE_DIR/skills/_shared/references/"
+
+# Stack packs (language-specific knowledge)
+if [ -d "$SCRIPT_DIR/skills/_shared/references/stacks" ]; then
+    mkdir -p "$CLAUDE_DIR/skills/_shared/references/stacks"
+    cp "$SCRIPT_DIR/skills/_shared/references/stacks/"*.md "$CLAUDE_DIR/skills/_shared/references/stacks/"
+    info "  Stack packs installed ($(ls "$SCRIPT_DIR/skills/_shared/references/stacks/"*.md | wc -l | tr -d ' ') languages)"
+fi
 
 # Shared state files — only if they don't already exist (don't overwrite user data)
 for f in ground.md owner-profile.md; do
@@ -132,4 +139,5 @@ echo "     /plan     — generate phases.md from a design doc"
 echo "     /dev N    — implement phase N"
 echo "     /qa N     — validate phase N"
 echo "     /fix      — targeted bug fixes"
+echo "     /deploy   — deployment readiness + release"
 echo ""

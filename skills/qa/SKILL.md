@@ -89,11 +89,12 @@ Invoke the `qa-planner` subagent to perform heavy context loading, deep file ana
    - Read `~/.claude/skills/qa/references/test-generation-protocol.md` → `{test_gen_content}`
    - Read `~/.claude/skills/qa/references/regression-and-coverage-strategy.md` → `{regression_content}`
    - Read `~/.claude/skills/qa/assets/test-plan-template.md` → `{plan_template}` (structural guide for plan output)
+   - If `phases.md` → `## Project Strategy` contains a `Stack Pack:` field, read the referenced file at `~/.claude/skills/_shared/references/stacks/{name}.md` → `{stack_content}` (use `"(not found)"` if absent or file doesn't exist). The Testing Patterns section tells the qa-planner which test framework, patterns, and coverage tools to use for this stack.
 
 2. Invoke `qa-planner` subagent via the Task tool with:
    - `subagent_type`: `"general-purpose"`
    - `model`: `"opus"` (planning requires high reasoning)
-   - Prompt: include the full planner protocol and all reference files inline (wrapped in XML tags: `<planner-protocol>`, `<deep-knowledge>`, `<test-generation-protocol>`, `<regression-strategy>`), provide the phase number and project root path, instruct the agent to skip reading these files from disk and use the provided content instead
+   - Prompt: include the full planner protocol and all reference files inline (wrapped in XML tags: `<planner-protocol>`, `<deep-knowledge>`, `<test-generation-protocol>`, `<regression-strategy>`, and `<stack-knowledge>` if stack pack was loaded), provide the phase number and project root path, instruct the agent to skip reading these files from disk and use the provided content instead. The stack knowledge Testing Patterns section tells the planner which test framework and patterns to use (e.g., `cargo test` + table-driven for Rust, `pytest` + parametrize for Python)
    - The subagent reads phases.md, all key-learnings (target + prior), verifies dev completion, reads every phase file (project-local files it CAN access), performs code pattern analysis, and returns the plan content as text
 
 3. After the subagent completes, write the returned content to `qa-plan-phase-{NN}.md` at the project root using the Write tool.

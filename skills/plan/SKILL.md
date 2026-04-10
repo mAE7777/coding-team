@@ -131,6 +131,8 @@ downstream decisions. These classifications persist into phases.md metadata.
    - Hardware/sensor keywords → Archetype B (test-every-step)
    - Animation/audio/perception keywords → Archetype C (test-at-perception-points)
    - ETL/pipeline/transformation patterns → Archetype D (test-at-boundaries)
+   - Compiled language (Cargo.toml, go.mod, CMakeLists.txt) → Archetype E (build-then-test)
+   - Mobile app (.xcodeproj, build.gradle, SwiftUI/Jetpack Compose) → Archetype F (simulator-verified)
    - Standard web/CLI/API → Archetype A (test-after-phase, default)
    If mixed: assign archetypes per subsystem. If uncertain: present detection to user
    via `AskUserQuestion` with detected signals and ask for confirmation.
@@ -143,6 +145,22 @@ downstream decisions. These classifications persist into phases.md metadata.
    - Tier 2: Reasoning/synthesis (summaries, analysis, recommendations)
    - Tier 3: Creative (generation, brainstorming, content creation)
    Record tiers — they affect Phase 4 task specifications (guard mechanisms in ACs).
+
+4. **Stack knowledge loading**: Based on the design document and any detected manifests
+   (package.json, Cargo.toml, go.mod, pyproject.toml, Package.swift, build.gradle),
+   check for a matching stack pack at `~/.claude/skills/_shared/references/stacks/`.
+   Matching rules:
+   - `Cargo.toml` or Rust mentioned → `stacks/rust.md`
+   - `pyproject.toml`, `requirements.txt`, or Python mentioned → `stacks/python.md`
+   - `go.mod` or Go mentioned → `stacks/go.md`
+   - `.xcodeproj`, `Package.swift`, or iOS/Swift mentioned → `stacks/swift-ios.md`
+   - `build.gradle`, `build.gradle.kts`, or Android/Kotlin mentioned → `stacks/kotlin-android.md`
+   - No match → skip (pipeline remains language-agnostic by default)
+   If a stack pack is found and loaded:
+   - Its `archetype:` field may override the default testing archetype from step 2
+   - Its Conventions section feeds Phase 3 as additional phase constraints
+   - Record in Project Strategy: `Stack Pack: stacks/{name}.md`
+   If no stack pack exists, this step is silently skipped — the pipeline works without it.
 
 → Proceed to Phase 2 (Quick or Standard).
 
@@ -201,6 +219,8 @@ Apply behavioral modifiers from entry to phase constraints: if modifiers emphasi
     - Archetype B/C: Max 2-4 tasks per phase, shorter duration, manual verification
       gates between tasks (not just at phase end)
     - Archetype D: Include verification at each transformation boundary
+    - Archetype E: 3-5 tasks, build+lint+test gate per task, compiler warnings as errors
+    - Archetype F: 2-4 tasks, simulator verification per task, human review for UI
     - Archetype A: Standard sizing (3-6 tasks per phase)
 
 1d. If `discovery/premortem-*.md` exists: cross-reference Tigers with phase plan.
