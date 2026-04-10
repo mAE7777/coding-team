@@ -1,7 +1,7 @@
 ---
 name: plan
 description: "Generate structured phases.md files from project plans or designs. Use when the user says /plan, 'create phases', 'generate feature phases', 'make phases.md', 'plan this', or wants to transform a design document into implementable development phases with environment checks, validation gates, and key-learnings integration. /plan is the canonical name; /feat is a deprecated alias."
-argument-hint: "<path-to-plan-or-design-file>"
+argument-hint: "<path-to-plan-or-design-file> | request [path]"
 ---
 
 # plan — Feature Phase Generator
@@ -27,6 +27,23 @@ stage I execute, I ask: am I extracting or annotating? If annotating before Phas
 I've drifted.
 
 ---
+
+## Mode Detection
+
+Parse `$ARGUMENTS`:
+- **File path** (default) → Full Planning Workflow (Phases 1-5)
+- **`request [path]`** → Request-Driven Planning
+
+### Request-Driven Planning
+
+When invoked with a request path:
+1. Read request file. Parse: source skill, gap, evidence, suggested resolution.
+2. Determine scope: planning-level gap (phase sizing, decomposition heuristic,
+   risk category) → address as targeted improvement to references.
+3. Project-level gap → run Full Planning Workflow with request context informing
+   Phase 1 extraction priorities.
+4. Present structured answer with recommended action.
+5. Suggest moving request to completed/.
 
 ---
 
@@ -75,21 +92,6 @@ exists. Deep: always apply.
 
 1a. Verify prerequisites: design document or scout discovery report must exist.
     Read pipeline-state.md (if exists) and present context to user.
-
-1b. **Steal-doc detection**: Glob at project root for `steal-*.md`, `reference-*.md`,
-    `port-*.md`, and similar patterns. If any found:
-    - Read each steal/reference document
-    - Extract items with their section numbers and types:
-      - **Code-portable**: API signatures, data schemas, algorithms, formulas, constants,
-        configuration patterns (items with concrete code that should be ported verbatim)
-      - **Design-pattern**: Architecture decisions, module boundaries, naming conventions,
-        workflow patterns (items describing how to organize, not what to copy)
-    - Extract all "Preserve" / "Don't change" / "Keep" directives — these are hard
-      constraints that must survive into phases.md verbatim
-    - Store as `{steal_items}` for use in Phases 3, 4, and 4b-4c
-    - Announce: "Found {count} steal/reference documents with {item_count} items
-      ({code_portable} code-portable, {design_pattern} design-pattern)"
-    If no steal/reference documents found: skip silently.
 
 2. **Three-pass extraction** (Extraction Mode — surface what's there, nothing else):
 
@@ -154,7 +156,7 @@ downstream decisions. These classifications persist into phases.md metadata.
    - `pyproject.toml`, `requirements.txt`, or Python mentioned → `stacks/python.md`
    - `go.mod` or Go mentioned → `stacks/go.md`
    - `.xcodeproj`, `Package.swift`, or iOS/Swift mentioned → `stacks/swift-ios.md`
-   - `build.gradle`, `build.gradle.kts`, or Android/Kotlin mentioned → `stacks/kotlin-android.md`
+   - `build.gradle`, `build.gradle.kts`, or Android/Kotlin mentioned → `stacks/kotlin-android.md` (if available)
    - No match → skip (pipeline remains language-agnostic by default)
    If a stack pack is found and loaded:
    - Its `archetype:` field may override the default testing archetype from step 2
@@ -235,7 +237,6 @@ Apply behavioral modifiers from entry to phase constraints: if modifiers emphasi
 
     | Task | Condition | What it checks |
     |------|-----------|----------------|
-    | Reference doc compliance | Project has steal/reference docs | Code-portable items match source APIs; design-pattern params match "Preserve"/"Don't change" sections; deviations documented in key-learnings |
     | Architecture compliance | Project has architecture doc | Module dependency rules enforced; component boundaries match spec; no undocumented cross-module imports |
     | Security compliance | Project has security doc | Every defense layer from security doc is implemented or explicitly deferred; threat model coverage |
     | Cross-phase integration | Always (5+ phases) | All modules communicate correctly; shared types consistent; no broken imports across module boundaries |
@@ -273,29 +274,6 @@ guard mechanism in the ACs:
 instructions (not just phase-level gates). Each task should specify what to verify
 manually and how (e.g., "Flash firmware, verify sensor reading within 5% of expected").
 
-**Steal constraints** (when `{steal_items}` exists from Phase 1 step 1b): For each task
-that implements a steal/reference item, include a `Steal:` block in the task notes:
-
-    Steal: steal-memory.md §3.2 (code-portable)
-    Preserve: "decay rates: bridge=0.025, confirmed=0.025, regular=0.05, shallow=0.075"
-    Preserve: "time-proportional formula: confidence * (1.0 - rate * days_since_last_use)"
-    Verify: decay() reads last_used field from semantic_memories table
-    Verify: rate constants match values above exactly
-
-Rules for Steal blocks:
-- **Code-portable items**: Copy "Preserve" directives verbatim from the steal doc —
-  these are the literal values, formulas, or API signatures that must appear in code.
-  Do NOT rephrase, summarize, or interpret. The exact text from the steal doc goes here.
-- **Design-pattern items**: Describe the pattern with a "Verify" line specifying what
-  the implementation must demonstrate (e.g., "Verify: all tool calls route through
-  ToolExecutor, not called directly from orchestrator")
-- **Every "Preserve"/"Don't change"/"Keep" directive** from the steal doc MUST appear
-  as a Preserve line in the corresponding task's Steal block. Missing a Preserve
-  directive is a completeness failure caught in Phase 4c.
-- **Verify lines** are manual integration checks derived from Preserve directives
-  (e.g., if steal says "Preserve: BM25 weight 0.3", Verify line is "Verify: search
-  combines vector and BM25 scores with BM25_WEIGHT=0.3")
-
 Incorporate user feedback on each phase before proceeding to the next.
 
 ### Phase 4b: Annotation Mode — Specification Honesty Check
@@ -313,29 +291,7 @@ to interpretation:
    "all errors go through handler Y"). Verify the phase tasks enforce the pattern
    in every code path — including catch blocks and fallthrough cases.
 
-1c. **Steal cross-reference audit** (when `{steal_items}` exists): This is the PRIMARY
-   gate against substitution errors — where the planner describes a different mechanism
-   than what the steal doc specifies.
-
-   For each task with a `Steal:` block, compare the task's narrative description
-   (ACs, notes, file descriptions) against the referenced steal-doc section:
-
-   | Check | What it catches | Action |
-   |-------|----------------|--------|
-   | Algorithm match | Task says "cosine similarity" but steal says "BM25" | STEAL_DEVIATION: substitution |
-   | Parameter match | Task says "decay rate 0.01" but steal says "0.025" | STEAL_DEVIATION: wrong constant |
-   | Schema match | Task omits a field that steal doc defines | STEAL_DEVIATION: missing field |
-   | Preserve fidelity | Task rephrases a Preserve directive instead of quoting it | STEAL_DEVIATION: lossy compression |
-
-   For each STEAL_DEVIATION found:
-   - Mark it: `[STEAL_DEVIATION: {type} — task says "{task_text}", steal says "{steal_text}"]`
-   - Present ALL deviations to user in a batch before proceeding
-   - User resolves each: **fix** (update task to match steal) or **override** (document
-     intentional deviation with rationale in task notes)
-
-   Zero deviations → proceed. Any unresolved deviation → STOP.
-
-2. **Feasibility Spot-Check**: For each technology named in the design document with a specific
+1c. **Feasibility Spot-Check**: For each technology named in the design document with a specific
    usage claim ("use Library X for feature Y"):
    - One Context7 or WebSearch query to confirm the capability exists
    - If confirmed: no marker needed
@@ -377,24 +333,6 @@ This is a mechanical diff of two lists, not a judgment call.
 4. If any DROPPED items: use `AskUserQuestion` — "These requirements from the design
    are not covered. Add to an existing phase, create a new phase, or defer explicitly?"
 
-4b. **Steal completeness** (when `{steal_items}` exists): Walk each steal item from
-   Phase 1 step 1b. Classify:
-
-   | Code | Meaning | Action |
-   |------|---------|--------|
-   | COVERED | Has a `Steal:` block in a specific task | Record the phase.task reference |
-   | DEFERRED | Explicitly out-of-scope with reasoning | Verify deferral documented |
-   | DROPPED | No `Steal:` block, not deferred | Flag for user review |
-
-   Present: `Steal completeness: {covered}/{total} covered, {deferred} deferred, {dropped} dropped.`
-
-   Also verify: every "Preserve"/"Don't change" directive from the steal docs appears
-   as a Preserve line in some task's Steal block. Missing Preserve directives are
-   flagged as DROPPED regardless of whether the parent item is COVERED.
-
-   If any DROPPED: use `AskUserQuestion` — "These steal items are not covered.
-   Add to existing task, create new task, or defer explicitly?"
-
 5. Zero DROPPED items → proceed to Phase 5.
 
 → **OUTPUT**: All phases specified, verified complete against extraction list.
@@ -430,6 +368,8 @@ Translator's Summary:
 - `~/.claude/skills/plan/references/complexity-routing.md` — Scoring, routes, tier changes. Load at **Phase 1b**.
 - `~/.claude/skills/_shared/references/pipeline-state-protocol.md` — Pipeline state format. Load at **Phase 5**.
 - `~/.claude/skills/plan/references/generation-mechanics.md` — Compilation, state, port, summary template. Load at **Phase 5**.
+- `~/.claude/skills/_shared/references/user-journey-simulation.md` — Seven-stage user journey protocol + taste audit. Load at **Phase 3** for user-facing projects.
+- `~/.claude/skills/_shared/references/ai-output-determinism.md` — Three-tier AI output classification + guard mechanisms. Load at **Phase 1c/4** when AI features present.
 - `~/.claude/skills/_shared/references/testing-strategy-archetypes.md` — Four testing archetypes + detection algorithm. Load at **Phase 1c**.
 
 ---

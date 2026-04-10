@@ -119,7 +119,7 @@ All phases PASS:
 ```
 pipeline/
 ├── skills/
-│   ├── scout/          (SKILL.md + 6 references + 1 asset)
+│   ├── scout/          (SKILL.md + 7 references + 2 assets)
 │   ├── plan/           (SKILL.md + 7 references + 1 asset)
 │   ├── dev/            (SKILL.md + 6 references + 1 asset)
 │   ├── qa/             (SKILL.md + 5 references + 2 assets)
@@ -131,11 +131,12 @@ pipeline/
 │       │   │   ├── rust.md, python.md, go.md, swift-ios.md
 │       │   │   └── README.md   (template for adding new languages)
 │       │   ├── testing-strategy-archetypes.md (A-F)
+│       │   ├── pre-mortem-framework.md
 │       │   ├── ai-output-determinism.md
 │       │   ├── user-journey-simulation.md
-│       │   ├── request-emission-guide.md
 │       │   ├── pipeline-constitution.md
-│       │   └── pipeline-state-protocol.md
+│       │   ├── pipeline-state-protocol.md
+│       │   └── port-registry.md
 │       ├── ground.md
 │       └── owner-profile.md
 ├── agents/             (8 agent definitions)

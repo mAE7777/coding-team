@@ -39,7 +39,20 @@ Read a phase from `phases.md`, absorb prior key-learnings, plan the implementati
 
 ### Stage 1: Initialization (Lightweight)
 
-1. Parse `$ARGUMENTS` for the phase number. If not provided, use `AskUserQuestion`: "Which phase number should I implement?"
+1. Parse `$ARGUMENTS`:
+   - **Phase number** (default) → continue to step 1b
+   - **`request [path]`** → Request Assessment Mode (short-circuit):
+
+   **Request Assessment Mode** (does not enter standard workflow):
+   1. Read the approved request file at `[path]`. Parse: source skill, type, gap, evidence, suggested resolution.
+   2. Route by assessment:
+      - If gap maps to an existing phase task in `phases.md` → "This maps to Phase {N}, Task {N.M}. Run `/dev {N}`."
+      - If gap needs new scope not in phases.md → "This requires new scope. Run `/plan` first."
+      - If type = `research` → spawn deep-researcher via Task tool (`subagent_type: "general-purpose"`). Pass gap description as context. Present findings.
+   3. Suggest moving request to `~/.claude/skills/_shared/requests/completed/` with outcome notes.
+   4. END — do not proceed to step 1b or beyond.
+
+   If no `$ARGUMENTS` provided: use `AskUserQuestion` to ask: "Which phase number should I implement?"
 
 1b. Read `pipeline-state.md` at project root. If it exists and "Last Skill" is "dev":
     - Present resume summary via `AskUserQuestion`: "Pipeline state shows dev was last active on Phase {N}, Task {N.M}. Resume from Task {N.M} or restart Phase {N}?"
@@ -55,7 +68,7 @@ Read a phase from `phases.md`, absorb prior key-learnings, plan the implementati
 
 1c2. **Testing strategy detection**: Check if phases.md contains a `## Project Strategy`
     section. If present, extract:
-    - Testing Archetype (A/B/C/D)
+    - Testing Archetype (A/B/C/D/E/F)
     - Verification Mode (per-phase/incremental)
     - Max Task Duration
     - AI Feature Inventory (if present)
@@ -167,6 +180,12 @@ Present the implementation plan (Execution Order + Per-Task Implementation Plan 
 ### Stage 2: Planning via Subagent
 
 **Condition**: Execute this stage when complexity tier = **Standard** or **Deep** (from Stage 1d). If tier = **Quick**, Stage 2Q above was already executed — skip to Stage 3.
+
+Before invoking the subagent, apply the `modifiers list` from Entry:
+- For each REVIEW modifier: instruct dev-planner to add a named review step in Per-Task Implementation Plan for affected tasks
+- For each GATE modifier: instruct dev-planner to add a validation gate for that area
+- For each TRUST modifier: instruct dev-planner to note "trusted capability — no explicit review needed" in affected tasks
+- Include the modifiers list in the subagent prompt as `<behavioral-modifiers>{modifiers list}</behavioral-modifiers>`
 
 Invoke the `dev-planner` subagent to perform heavy context loading, codebase exploration, and implementation planning in a fresh context window. This offloads ~1200-1700 lines of context from the main conversation.
 
@@ -283,20 +302,14 @@ For each task in the approved order:
      security-aware quality checks). Load `references/sensitivity-heuristics.md`
      and include the matching domain row in the task-spec as verification checklist.
    - **Modifier overlay**: Check the `modifiers list` for modifiers intersecting this task. If REVIEW: add to task-spec notes — "Modifier: verify {area} explicitly after implementation." If GATE: add — "Modifier: flag {area} decisions for user review before marking complete."
-   - **Testing strategy overlay**: If `{project_strategy}` indicates incremental verification (Archetype B or C):
+   - **Testing strategy overlay**: If `{project_strategy}` indicates incremental verification (Archetype B, C, E, or F):
      - Add to task-spec notes: `verification-mode: incremental`
      - For Archetype B (Hardware): add "After implementation, flash/deploy and verify on hardware before marking complete"
      - For Archetype C (Perception): add "After implementation, perform visual/auditory review before marking complete"
+     - For Archetype E (Data Pipeline): add "After implementation, run pipeline with sample data and verify output before marking complete"
+     - For Archetype F (ML/AI): add "After implementation, run inference with test input and verify model output before marking complete"
      - These tasks return REQUIRES_VERIFICATION instead of COMPLETE, triggering orchestrator step 6c
    - **AI task annotation**: If `{project_strategy}` has an AI Feature Inventory and this task implements an AI feature, add the tier classification and guard mechanism to task-spec notes: `ai-output-tier: {N}, guard: {mechanism}`
-   - **Steal constraints extraction**: If the task notes contain a `Steal:` block
-     (from phases.md), read the referenced steal-doc section (e.g., `steal-memory.md §3.2`).
-     Include in the task-spec XML as `<steal-constraints>` with:
-     - The full text of the referenced steal-doc section
-     - All Preserve directives from the Steal block
-     - All Verify lines from the Steal block
-     - Instruction: "Implementation MUST match Preserve directives exactly. Verify lines
-       are acceptance criteria — check each one before reporting COMPLETE."
 
 5. **Spawn task-implementer subagent** via Task tool:
    - `subagent_type`: `"general-purpose"`
@@ -329,10 +342,16 @@ For each task in the approved order:
         changed files from the subagent result. Targeted check: exposed secrets, unhandled
         error paths, auth bypass vectors, missing input validation. If issues found: present
         to user before marking complete. This applies regardless of tier when sensitivity = HIGH.
-     i. **Steal compliance check**: If the task had `<steal-constraints>` in its spec,
-        verify the subagent result confirms each Preserve directive and Verify line was
-        satisfied. If any Preserve directive is not reflected in the implementation: treat
-        as AC failure — do not mark complete. Present the specific deviation to the user.
+     i. **Entry point reachability check**: For every new export or module created by the task,
+        trace the import chain from the application's entry point (main, CLI handler, route handler,
+        factory function) to the new code. Verify the feature is reachable through normal usage —
+        not just through test imports. Specifically:
+        - Grep for who imports the new export
+        - Trace that importer back to the entry point
+        - Verify every creation site passes the new dependency (e.g., if a new optional config param was added, confirm the production caller provides it)
+        If the trace breaks at any link, the feature is dead code in production. Fix the wiring
+        before marking the task complete. This check is especially critical for "integrate X into Y"
+        tasks where the module exists but the caller must explicitly opt in.
      j. **Extended decision preservation** (Deep tier only): Extend the window to 2 tasks —
         full decision text rides in `prior_tasks` for the next 2 tasks, then collapses to 1-line.
 
@@ -431,7 +450,9 @@ Follow `references/key-learnings-creation-guide.md` for the full creation proces
 
 3. Write to `key-learnings/key-learnings-{NN}.md` using the template from `assets/key-learnings-template.md`.
 
-4. Present the key-learnings file to the user for review. Incorporate edits if requested.
+4. **Cross-check Files table against git diff**: Run `git diff --stat` (from the phase's first task commit to HEAD) and compare every changed file against the "Files Created/Modified" table. Every file in the diff must appear in the table, and vice versa. Flag and fix any discrepancies before presenting to the user. This prevents undocumented file changes from being invisible to downstream qa.
+
+5. Present the key-learnings file to the user for review. Incorporate edits if requested.
 
 ### Success: key-learnings file written with all 8 required sections.
 ### Failure: Unable to generate accurate key-learnings content.
@@ -460,7 +481,8 @@ If any of these checks fail, fix the issue before continuing. Do NOT present the
    - If git is not initialized, skip with: "Git not initialized — skipping commit."
 
 4. **Knowledge capture** (lightweight):
-   - Read `~/.claude/skills/_shared/deep-knowledge.md` (if exists)
+   - Read `~/.claude/skills/_shared/deep-knowledge.md` (if it exists)
+   - Check: did anything in this session contradict or extend a deep-knowledge entry? If so, note it in the completion summary for user review.
    - Note any `[UNVERIFIED]` items that persisted across multiple tasks in the completion summary.
 
 5. Present a final summary:

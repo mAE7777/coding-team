@@ -266,7 +266,7 @@ Then update `owner-profile.md` with their answers.
 
 Run these checks and report results:
 
-1. **File count**: Verify all pipeline files exist in their expected locations (6 SKILL.md + 31 skill references + 7 skill assets + 14 shared files + 8 agents + 7 hooks; minus install.sh/README.md/SETUP.md/settings.json which stay in the repo)
+1. **File count**: Verify all pipeline files exist in their expected locations (6 SKILL.md + 31 skill references + 7 skill assets + 12 shared references + 2 shared config + 8 agents + 7 hooks; minus install.sh/README.md/SETUP.md/settings.json which stay in the repo)
 2. **Hook permissions**: Verify all 7 hooks are executable (`ls -la {BASE}/hooks/*.sh`)
 3. **Settings merge**: Verify hooks are registered in `{BASE}/settings.json`
 4. **Quick smoke test**:

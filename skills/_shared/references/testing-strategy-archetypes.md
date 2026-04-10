@@ -6,7 +6,7 @@ Loaded by /plan at Phase 1c and by /dev at Stage 1.
 
 ---
 
-## Four Archetypes
+## Archetypes
 
 ### Archetype A: Test-After-Phase (Standard Software)
 
@@ -146,6 +146,8 @@ archetype for cross-subsystem integration points.
 | B (Hardware) | 2 hours | High (physical) | Always |
 | C (Perception) | 1 hour | Medium (human senses) | Always |
 | D (Data Pipeline) | 2 hours | Medium (data inspection) | On schema changes |
+| E (Compiled) | 2 hours | Low (compiler + tests) | Only on unsafe/FFI |
+| F (Mobile) | 1 hour | High (simulator) | Always for UI |
 
 Risk multipliers (divide max duration by):
 - 1.5x if security-sensitive
@@ -187,7 +189,7 @@ When /plan detects a non-standard archetype, it adds metadata to phases.md:
 ## Project Strategy
 | Field | Value |
 |-------|-------|
-| Testing Archetype | B (Hardware) / C (Perception) / D (Data Pipeline) / A (Standard) |
+| Testing Archetype | A (Standard) / B (Hardware) / C (Perception) / D (Data Pipeline) / E (Compiled) / F (Mobile) |
 | Verification Mode | incremental / per-phase |
 | Max Task Duration | {from sizing table} |
 ```
@@ -197,10 +199,12 @@ This metadata is consumed by /dev to adjust task execution:
   Present manual verification instructions to user when needed.
 - **per-phase**: Standard flow — validate at phase end via gates.
 
-For Archetype B and C, /plan should also:
+For Archetype B, C, E, and F, /plan should also:
 - Size tasks smaller (2-4 per phase, shorter duration)
 - Add manual verification gates between tasks, not just at phase end
 - Include "flash and test" or "visual check" as task-level ACs
+- For E: Build verification after every task
+- For F: Simulator verification after every task
 - Ask user at Phase 3: "This project involves hardware/perception. Should
   I design phases for incremental testing (recommended) or batch testing?"
 

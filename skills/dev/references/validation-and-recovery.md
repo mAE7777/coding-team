@@ -73,6 +73,19 @@ Steps:
 Did the login flow work as described? (yes/no)
 ```
 
+### CLI Smoke Test Gate (CLI projects only)
+
+**Execution**: After all tasks complete, build and run the actual binary to verify new features are reachable from the user's entry point.
+
+**Steps:**
+1. Build: `pnpm build` (ensure dist matches source)
+2. Run with a test prompt: `node dist/cli/index.js "test prompt" 2>/tmp/dev-smoke-stderr.txt`
+3. Verify: new features appear in stdout/stderr (routing info, status displays, tool output)
+4. If the phase adds interactive/REPL features: test with pipe input (`echo "test" | node dist/cli/index.js`)
+5. Check stderr for expected progress/status output
+
+**Why this exists**: A function can be perfectly implemented, fully unit-tested, and still be dead code from the user's perspective if the call chain from main() to the function is broken. This gate catches wiring gaps that unit tests and type checks cannot detect.
+
 ### Integration Gates
 
 **Execution**: Orchestrate a multi-step automated flow, sometimes combining automated commands with manual verification.

@@ -63,7 +63,7 @@ Independently validate a completed phase. qa is the final quality barrier — it
     |-------------|-----------|---------------------|
     | Web app (UI) | `.tsx`/`.jsx`/`.vue`/`.svelte` in src/ | Full C/E/F, standard D |
     | API/backend | No UI files, has route handlers or server entry | Skip E/F, 2x B (endpoint contract tests, request/response shape validation), 2x D (auth/authz boundary tests) |
-    | CLI tool | `bin/`, CLI entry point, no UI files | Skip C/E/F entirely, 2x B (arg parsing edge cases, error output formatting, exit code tests) |
+    | CLI tool | `bin/`, CLI entry point, no UI files | Skip E/F. Adapt C: use `expect` for TTY journeys, pipe for non-TTY (see test-generation-protocol Section 3). 2x B (arg parsing edge cases, error output formatting, exit code tests) |
     | Library/package | `exports` in package.json, no app entry | Skip C/E/F, 2x B (public API surface coverage, type export tests) |
     | Full-stack | Both UI files and API routes | All categories, add API-UI integration tests to C |
 
@@ -246,14 +246,43 @@ Using Playwright MCP tools and static analysis:
 
 6. Capture evidence for every finding — screenshots with descriptive filenames.
 
-### Success: All categories executed (direct or via subagent), results collected.
-### Failure: Dev server unavailable or Playwright MCP not available — note limitations in report.
+7. **E2E behavior testing (mandatory for all project types)**:
+
+   Unit/integration tests passing is necessary but NOT sufficient. qa must verify the application works through its **public interface** using **built artifacts** — the way a real user would experience it.
+
+   | Project Type | Public Interface | E2E Method |
+   |-------------|-----------------|------------|
+   | Web app | Browser UI | Playwright (already covered above) |
+   | CLI tool | stdin/stdout/stderr/exit code | Spawn built binary (`node dist/...`), pipe input, check output + file side effects |
+   | Daemon/service | IPC/HTTP/socket protocol | Start process, interact via protocol, check side effects |
+   | Library | Public exports | Import from `dist/` (not `src/`), call API, verify behavior |
+   | API server | HTTP endpoints | Start server, send requests, verify responses + side effects |
+
+   **E2E protocol (all project types):**
+   a. **Build first**: `pnpm build` (or equivalent). Use `dist/` output, not source. This catches build/bundling issues unit tests miss.
+   b. **Isolated environment**: Create temp dirs for state. Never touch real user data (`~/.app/`). Pass config paths via constructor or env var.
+   c. **Exercise through public interface**: Spawn the binary, import the built package, or start the server — however a real user would interact.
+   d. **Verify observable outcomes**: Files created (existence, content, permissions), stdout/stderr output, exit codes, HTTP responses — what a user can see.
+   e. **Verify persistence**: If the feature has state, destroy the instance, create a new one from the same state dir, verify behavior survives restart.
+   f. **Causal trace**: For each major assertion, document the call chain from entry point to observable outcome. Format: `entry point → caller → module → observable effect`. **If the trace cannot be completed (a link in the chain is missing), the feature is not wired — flag as CRITICAL finding.**
+
+   The causal trace in step (f) is the key difference from unit testing. A unit test proves "module X works when called directly." The causal trace proves "module X is actually called when a user runs the application." This catches dead code, missing wiring, and features that exist in source but are unreachable from the entry point.
+
+   **CLI journey testing adaptation**: For CLI tools, adapt Category C (User Journeys) instead of skipping it:
+   - TTY journeys: use `expect` (or equivalent) to drive interactive prompts
+   - Non-TTY journeys: pipe input via stdin, verify stdout/stderr output and exit codes
+   - See test-generation-protocol Section 3 for detailed patterns
+
+   If Playwright is not available (CLI/daemon project), execute E2E tests directly via Bash (spawn process, check files, parse output). E2E tests for web apps are covered by the Playwright categories above.
+
+### Success: All categories executed (direct or via subagent), E2E behavior verified, results collected.
+### Failure: Dev server unavailable, build fails, or causal trace breaks — note in report.
 
 ### Stage 6: Adversarial Code Review
 
 Load `references/adversarial-review-protocol.md`.
 
-Four-pass structure:
+Five-pass structure:
 
 1. **Convention Audit**: For each convention/pattern from **the plan file's "Conventions to Verify" and "Patterns to Verify" tables** in the Accumulated Context section, Grep to verify compliance. Document every violation with file:line.
 
@@ -263,21 +292,11 @@ Four-pass structure:
 
 4. **Cross-Phase Integrity Check**: Verify files from prior phases weren't silently modified, imports resolve, shared types compatible.
 
-5. **Steal compliance audit** (when phases.md tasks reference steal items): For each
-   task with a `Steal:` block in phases.md:
-   - Read the referenced steal-doc section
-   - For each Preserve directive: verify the implementation matches exactly
-     (constants, formulas, field names, API signatures)
-   - For each Verify line: confirm the stated integration check holds
-   - Classify deviations:
-     - CRITICAL: Preserve directive violated (wrong constant, missing field, different algorithm)
-     - MEDIUM: Verify line not satisfied (integration gap)
-     - LOW: Implementation works but uses different naming than steal doc
-   If no steal items referenced in this phase: skip this pass.
+5. **Wiring/Reachability Review**: For every new export or module introduced in this phase, trace the import chain from the application's entry point to the new code. Verify the feature is reachable through normal usage. If any link in the chain is missing, flag as CRITICAL — the feature is dead code in production. This complements the E2E causal trace from Stage 5 with a static analysis perspective.
 
 Classify findings: CRITICAL / MEDIUM / LOW.
 
-### Success: All review passes completed (4 standard + steal compliance if applicable), minimum 3 findings documented.
+### Success: All review passes completed (5 standard), minimum 3 findings documented.
 ### Failure: Unable to complete review passes.
 
 ### Stage 7: Results & Key-Learnings Update
@@ -354,10 +373,8 @@ Classify findings: CRITICAL / MEDIUM / LOW.
    - If no project files were modified (only gitignored pipeline files changed), skip the commit
 
 6. **Knowledge capture** (lightweight):
-   - Read `~/.claude/skills/_shared/deep-knowledge.md` (if exists)
-   - Check: did anything in this session contradict or extend a deep-knowledge entry?
-   - If yes: append 1-2 lines to `~/.claude/skills/_shared/working-memory.md` under `## Signals`
-   - If no: skip silently
+   - Read `~/.claude/skills/_shared/deep-knowledge.md` (if it exists)
+   - Check: did anything in this session contradict or extend a deep-knowledge entry? If so, note it in the final result summary for user review.
 
 7. Present final result with evidence and next steps:
    - If PASS: "Phase {N} validated. Run `/dev {N+1}` for next phase."
@@ -394,8 +411,8 @@ Classify findings: CRITICAL / MEDIUM / LOW.
 
 ## When I Hit My Limits
 
-1. Note the limitation in the report and work around it
-2. For unknown vulnerability classes: invoke deep-researcher for current CVE/mitigation data
+1. Note the limitation and work around it
+2. For unknown domains, invoke deep-researcher for current data
 3. Mark affected findings as [UNVERIFIED] with the specific gap noted
 
 ---
@@ -416,4 +433,3 @@ Load these files when the workflow reaches the relevant stage:
 - `security-auditor` (`~/.claude/agents/security-auditor.md`): Handles security audit at **Stage 4** step 3. Scoped to phase files. Model: sonnet.
 
 ---
-

@@ -167,6 +167,15 @@ For EVERY file created or modified in the target phase, evaluate across these 8 
 - [ ] Package versions match key-learnings declarations
 - [ ] No duplicate packages (different versions of same package)
 
+#### 9. Wiring / Reachability
+- [ ] Every new exported function is imported by at least one caller in a reachable path
+- [ ] Trace from entry point (main, CLI, route handler) to new feature — is the call chain connected?
+- [ ] Config/schema values that are parsed are also consumed (not just loaded and ignored)
+- [ ] Feature flags that gate creation in factory also have a consumption path in the entry point
+- [ ] New function parameters (e.g., `driveSystem`, `statusLine`) are actually passed by callers
+
+**How to check**: For each new export, grep for its import. Then trace that importer — is IT called from main? A function can be exported, imported, and still unreachable if the importer is also dead code.
+
 ---
 
 ## Section 4: Key-Learnings Accuracy Verification

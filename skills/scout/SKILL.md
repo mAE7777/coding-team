@@ -1,7 +1,7 @@
 ---
 name: scout
 description: "Pre-planning discovery and research for projects. Use this skill when the user says /scout, 'research options', 'explore before planning', 'what should I use for', 'evaluate technologies', or wants to investigate approaches, map an existing codebase, or make informed technology decisions before running /plan. Produces discovery reports and optionally draft design documents."
-argument-hint: "<topic> | \"verify [claim]\" | \"research [question]\""
+argument-hint: "<topic> | \"verify [claim]\" | \"research [question]\" | request [path]"
 ---
 
 # scout — Pre-Planning Discovery & Research
@@ -50,14 +50,17 @@ Parse `$ARGUMENTS`:
 
 - **Topic or question** (default) → Full Investigation (Stages 1-6)
 - **`"verify [claim]"` or `"research [specific question]"`** → Targeted Research
+- **`request [path]`** → Targeted Research (with request context)
 
 One investigation per invocation. Each `/scout` handles one research topic.
 
 ### Targeted Research
 
-When invoked with a narrow question, run Quick tier automatically:
+When invoked with a narrow question or a request path, I run Quick tier automatically:
 
-1. Parse the specific claim or question.
+1. **If request path**: Read the request file. Parse: source skill, gap description,
+   evidence, suggested resolution. The request's gap becomes the research question.
+   **If direct question**: Parse the specific claim or question.
 2. Run 2-3 targeted WebSearch queries + Context7 if a library is named
 3. Tag findings with source tiers
 4. Present a structured answer:
@@ -70,6 +73,7 @@ When invoked with a narrow question, run Quick tier automatically:
    ```
 5. No discovery report, no stage gates, no user confirmation loops.
 6. If deeper investigation needed, offer Full Investigation workflow.
+7. **If request path**: Suggest moving request to `completed/`.
 
 ---
 
@@ -385,8 +389,9 @@ Write output to `discovery/premortem-{slug}.md`.
 ## When I Hit My Limits
 
 1. I note the limitation in the deliverable and work around it.
-2. I mark affected claims as [UNVERIFIED] — feeds into /plan Phase 4b markers.
-3. I continue with what I have. Partial research with honest gaps beats stalling.
+2. For unfamiliar topics or gaps in available documentation, I use deep-researcher to gather additional context.
+3. I mark affected claims as [UNVERIFIED] — feeds into /plan Phase 4b markers.
+4. I continue with what I have. Partial research with honest gaps beats stalling.
 
 ---
 
@@ -400,4 +405,8 @@ Load these files when the workflow reaches the relevant stage:
 - `references/brownfield-analysis-guide.md` — Codebase mapping, constraint identification. Load at **Stage 2** for brownfield.
 - `references/deep-dive-protocol.md` — Analyst brief protocol for selected approach. Load at **Stage 4**.
 - `~/.claude/skills/_shared/references/pipeline-state-protocol.md` — Pipeline state for context. Load at **Stage 1**.
+- `references/premortem-protocol.md` — Scout-specific pre-mortem integration (loads the shared framework). Load at **Stage 5**.
+- `~/.claude/skills/_shared/references/pre-mortem-framework.md` — Universal pre-mortem methodology (Tiger classification, mitigation, Elephant monitoring). Loaded via `premortem-protocol.md`.
 - `references/research-architecture.md` — Blocking conditions, finding lifecycle, sensitivity classification, question completeness, finding propagation protocol. Load at **Stage 2**; propagation rules apply at **Stages 3, 4, 6**.
+- `~/.claude/skills/_shared/references/ai-output-determinism.md` — AI output tier classification (Tier 1/2/3). Load at **Stage 4** when project involves AI features.
+- `~/.claude/skills/_shared/references/user-journey-simulation.md` — User journey simulation for technology choice impact. Load at **Stage 4** for user-facing projects (evaluate how tech choices affect onboarding, time-to-value, daily experience).

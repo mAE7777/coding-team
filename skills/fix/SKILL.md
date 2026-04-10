@@ -90,12 +90,12 @@ causes more damage than the original bug.
    - Otherwise: /plan first, then /dev
    ```
 
-5. Check for an active pipeline:
+7. Check for an active pipeline:
    - Look for `phases.md` at project root
    - If found, identify overlap with in-progress or future phases
    - If overlap exists, note it in the triage presentation
 
-6. Present triage result:
+8. Present triage result:
    ```
    fix Triage: {brief description}
 
@@ -258,13 +258,7 @@ Adversarial verification scaled by mode:
    - Update Last Updated timestamp
    - Set Last Skill to "fix"
 
-3. **Working-memory signal**: If `~/.claude/skills/_shared/working-memory.md` exists, append under `## Signals`:
-   ```markdown
-   ### {YYYY-MM-DD} fix: {1-line summary}
-   {mode}, {file count} files, {area}. {Root cause if notable.}
-   ```
-
-4. If an active pipeline exists and the fix touches files relevant to a phase:
+3. If an active pipeline exists and the fix touches files relevant to a phase:
    - Read the relevant `key-learnings/key-learnings-{NN}.md`
    - Append a `## Fix Notes` section:
      ```markdown
@@ -275,12 +269,11 @@ Adversarial verification scaled by mode:
      - Impact on this phase: {what the phase implementor needs to know}
      ```
 
-5. **Knowledge capture** (lightweight):
+4. **Knowledge capture** (lightweight):
    - Read `~/.claude/skills/_shared/deep-knowledge.md` (if exists)
-   - If the fix revealed a pattern or anti-pattern worth tracking, append 1-2 lines to `working-memory.md` under `## Signals`
-   - If nothing novel: skip silently
+   - If the fix revealed a pattern or anti-pattern that contradicts or extends deep-knowledge, note it in the completion summary for user review.
 
-6. Present completion summary:
+5. Present completion summary:
    ```
    fix Complete: {brief description}
 

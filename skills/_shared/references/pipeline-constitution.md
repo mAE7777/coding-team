@@ -20,6 +20,9 @@ guide judgment rather than replacing it.
 - **Key-learnings are mandatory.** Every dev phase writes structured key-learnings.
 - **pipeline-state.md is updated at entry AND exit.** Skills that modify
   pipeline-state.md must update it when starting work AND when completing work.
+- **Pre-mortem findings propagate.** Tiger mitigations become plan phase
+  constraints. Elephant tripwires become dev/qa validation criteria. Unresolved
+  risks become phases.md Open Questions.
 - **Chain integrity.** Each dev/qa phase reads ALL prior key-learnings.
   Conventions established in Phase 0 apply to all subsequent phases.
 
@@ -39,8 +42,8 @@ guide judgment rather than replacing it.
   Assume defects exist and hunt for them.
 - **Validation before completion.** No skill marks a phase as COMPLETE without
   running verification (build, typecheck, tests, or equivalent).
-- **Security is continuous.** Security scanning occurs at write-time (hooks)
-  and per-phase (qa security audit).
+- **Security is continuous.** Security scanning occurs at write-time (hooks),
+  per-phase (qa security audit), and pre-deploy (dependency audit). Not just at deploy.
 
 ## Context as Public Good
 
@@ -75,8 +78,21 @@ Skills isolate heavy context through subagents:
 
 ## Product Design Philosophy
 
-Three principles that govern how the pipeline approaches design and implementation
+Five principles that govern how the pipeline approaches design and implementation
 decisions. These ensure every technical choice is grounded in real user impact.
+
+- **User Journey Simulation.** Design decisions are validated by simulating the
+  complete user journey — from discovery to daily use to identity integration.
+  When /plan designs phase boundaries, it asks: "What can a user experience after
+  this phase?" not just "What works?" Load `user-journey-simulation.md` when
+  making phase architecture decisions for user-facing projects.
+
+- **AI Output Determinism.** When designing features powered by AI/LLMs, explicitly
+  classify each output's determinism tier: Tier 1 (deterministic — hardcode or
+  structured output), Tier 2 (reasoning/synthesis — RAG + guards), Tier 3
+  (creative — high temperature + quality gate). The tier drives implementation
+  pattern, guard mechanisms, and testing approach. Load `ai-output-determinism.md`
+  when planning AI-powered features.
 
 - **Progressive Shippability (Onion Model).** Every phase ships a complete product
   layer, not a slice of a future product. Phase 0 = environment. Phase 1 = simplest
@@ -94,17 +110,18 @@ decisions. These ensure every technical choice is grounded in real user impact.
 
 - **Adaptive Testing Strategy.** Different project domains need different testing
   cadences. Hardware/sensor projects test after every task (sim-to-real gap).
-  UI/animation projects need human perception checks per change. Standard apps
+  UI/animation projects need human perception checks per change. Standard web apps
   test per phase. /plan detects the project archetype and sizes tasks/phases
   accordingly. Load `testing-strategy-archetypes.md` when classifying projects.
 
-All three principles serve one meta-goal: **stand with users**. Every decision
+All five principles serve one meta-goal: **stand with users**. Every decision
 should be traceable to "what would happen when a real person uses this?"
 
 ## Anti-Patterns
 
 - Never skip user approval gates.
 - Never assume a library or API has a capability — verify first.
+- Never silently drop a pre-mortem Tiger from the phase plan.
 - Never proceed with a missing prerequisite — stop and tell the user.
 
 ## File Ownership
@@ -112,11 +129,13 @@ should be traceable to "what would happen when a real person uses this?"
 | File | Writers | Readers |
 |------|---------|---------|
 | `phases.md` | /plan (create), /dev (checkboxes only) | all pipeline skills |
-| `pipeline-state.md` | /plan (create), /dev, /qa, /fix | all skills + hooks |
-| `key-learnings/*.md` | /dev (create), /qa (append qa Notes) | /dev, /qa, /fix |
-| `qa-reports/*.md` | /qa only | /fix |
+| `pipeline-state.md` | /plan (create), /dev, /qa, /fix, /deploy (archive) | all skills + hooks |
+| `key-learnings/*.md` | /dev (create), /qa (append qa Notes) | /dev, /qa, /fix, /deploy |
+| `qa-reports/*.md` | /qa only | /fix, /deploy |
 | `README.md` | /dev (create/update), /qa (update if fixes applied) | all skills |
-| `fix-log.md` | /fix only | all skills |
+| `fix-log.md` | /fix only | /deploy |
+| `deep-knowledge.md` | /update only | all skills (read at entry) |
+| `pipeline-constitution.md` | /update only (with ground + consistency check) | all skills (at entry) |
 
 ## Skill Entry Protocol
 
@@ -130,11 +149,12 @@ Every skill, as its first action after parsing arguments:
    - dev: phases.md + key-learnings directory
    - qa: phases.md + completed dev phase
    - fix: (no prerequisites — always available)
+   - deploy: phases.md + all phases qa'd (or user-approved exceptions)
 
-3. If anything is missing or inconsistent: stop, explain what's missing, suggest
+4. If anything is missing or inconsistent: stop, explain what's missing, suggest
    the correct skill to run first.
 
-4. **Knowledge capture** (lightweight, at skill completion):
-   - dev/qa: write key-learnings
+5. **Knowledge capture** (lightweight, at skill completion):
+   - dev/qa: write key-learnings, check deep-knowledge for contradictions/extensions
    - fix: append to fix-log.md
    - Others: no action required

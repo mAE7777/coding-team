@@ -145,6 +145,95 @@ Verification:
 4. **Session Lifecycle Journey**: Login → work → idle → return → logout
 5. **Multi-Feature Journey**: Use features from multiple phases in sequence
 
+### CLI Journey Template
+
+For CLI tools, user journeys run the actual binary instead of a browser. Use `expect` for TTY interactions (REPL, interactive prompts) and pipe for non-TTY flows.
+
+```
+Journey: {descriptive name}
+Persona: {who is using the CLI}
+Goal: {what they're trying to accomplish}
+
+Setup:
+  - Build: pnpm build (ensure dist matches source)
+  - Config: set/clear feature flags as needed
+  - State: clear persisted state if testing from clean slate
+
+Steps (expect for TTY):
+  1. spawn node dist/cli/index.js [args]
+  2. expect "prompt> " → send "{input}\r"
+  3. Expected: {stdout content, stderr content, ANSI codes}
+  4. ...
+  N. send "exit\r" → expect eof
+
+Steps (pipe for non-TTY):
+  1. echo "{input}" | node dist/cli/index.js [args] 2>/tmp/stderr.txt
+  2. Expected stdout: {content}
+  3. Expected stderr: {routing info, progress, errors}
+  4. Expected exit code: {0 or non-zero}
+
+Verification:
+  - stdout/stderr channel separation correct
+  - ANSI escape codes present/absent based on TTY
+  - Feature flags activate expected behavior
+  - Persisted state reflects expected mutations
+```
+
+**Key checks for CLI journeys:**
+- Status/progress output goes to stderr, content to stdout
+- `--quiet` suppresses all stderr progress
+- Non-TTY stderr omits ANSI codes and in-place updates
+- Interactive features (REPL, prompts) only activate with TTY stdin
+- Multi-turn sessions: verify state across turns (not just single-shot)
+- Cleanup: dispose/close called on exit paths
+
+### E2E Behavior Tests (All Project Types)
+
+Category C journeys verify behavior through the test framework. E2E behavior tests go further: they verify the application works **as built** (`dist/`), through its **public interface**, with **real side effects** (filesystem, network, IPC).
+
+Every E2E test must include a **causal trace** — a chain from the application's entry point to the observable outcome, proving the feature is reachable in production:
+
+```
+Causal trace: {entry point} → {caller} → {module} → {observable effect}
+Example:     daemon/main.ts → PulseOrchestrator(config) → feedbackTracker.recordDelivery() → feedback-pending.jsonl created
+```
+
+If the trace breaks at any link (e.g., caller doesn't pass the dependency, module not imported, feature flag not checked), the feature is dead code. Flag as CRITICAL.
+
+**E2E Journey Template (non-web projects):**
+
+```
+Journey: {descriptive name}
+Goal: {what observable behavior we're proving works end-to-end}
+
+Setup:
+  - Build: pnpm build
+  - Isolation: tmpDir = mkdtemp("app-e2e-")
+  - Config: create temp config with required flags/settings
+  - Import: from dist/ (NOT src/)
+
+Steps:
+  1. {Action via public interface} → Verify: {observable outcome}
+     Trace: {entry → ... → outcome}
+  2. {Action} → Verify: {outcome}
+     Trace: {entry → ... → outcome}
+  ...
+
+Persistence (if stateful):
+  - Destroy all instances
+  - Recreate from same tmpDir
+  - Verify: state survived restart
+
+Teardown: rm -rf tmpDir
+```
+
+**What E2E catches that unit tests miss:**
+- Feature implemented but not wired into entry point (dead code)
+- Build/bundling breaks import resolution
+- File permissions wrong in production (test mocks bypass filesystem)
+- State persistence fails (in-memory tests don't touch disk)
+- Config/flag gating prevents feature from activating
+
 ### Anti-Pattern: The Isolated Click Test
 
 This is NOT a journey:

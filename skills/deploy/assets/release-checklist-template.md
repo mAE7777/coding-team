@@ -49,20 +49,6 @@
 - [ ] Env var coverage: {PASS / N missing}
 - [ ] Platform config valid: {PASS/FAIL}
 
-## Product Readiness
-
-{Include this section when product-readiness-report.md exists}
-
-- [ ] Performance: {Good/Needs Work/Poor} — LCP {X}s, CLS {X}, JS {X}KB
-- [ ] User Journeys: {N}/5 passed
-- [ ] Accessibility: {N}/5 areas clear
-- [ ] Resilience: {N}/6 tests passed
-- [ ] Content & Polish: {N}/10 items checked
-- [ ] Production Config: {N}/8 items verified
-- [ ] Overall Verdict: {READY / NOT READY / READY WITH CAVEATS}
-
-{If NOT READY and user proceeded: "User acknowledged {N} critical issues and chose to proceed."}
-
 ## Pipeline Status
 
 - [ ] All phases complete

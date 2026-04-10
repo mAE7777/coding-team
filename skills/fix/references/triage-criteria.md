@@ -113,4 +113,3 @@ When qa-fix mode is detected:
 - **Finding not found in report**: Inform user: "Could not match description to a documented qa finding."
 - **Fix addresses both qa and non-qa issues**: Use qa-fix mode if at least one finding maps to a documented qa report.
 - **Multiple qa reports**: If findings span multiple reports, combine the file lists.
-- **polish-routed fix**: If `polish-report.md` exists and the fix description matches a P0 or P1 finding categorized as "Code" or "Polish", activate qa-fix mode even without a qa report reference.

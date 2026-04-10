@@ -24,7 +24,7 @@ failures are the #1 source of deployment problems that slip past qa.
 - When to invoke deep-researcher: operationalized in "When I Hit My Limits" section (2026-02-27)
 
 ## Connections
-- **Upstream**: /qa (reports feed Stage 1 verification), /dev (key-learnings feed changelog), /fix (fix-log feeds release artifacts), /polish (product-readiness report feeds checklist)
+- **Upstream**: /qa (reports feed Stage 1 verification), /dev (key-learnings feed changelog), /fix (fix-log feeds release artifacts)
 - **Downstream**: none — deploy is the pipeline terminus
-- **Shared state**: pipeline-state.md (reads + archives), port-registry.md (releases ports), deep-knowledge.md (reads for signals), working-memory.md (writes signals)
-- **Ecosystem channels**: request emission (unfamiliar targets), deep-researcher (unknown errors), /absorb service (complex readiness findings) — all operationalized in "When I Hit My Limits"
+- **Shared state**: pipeline-state.md (reads + archives), port-registry.md (releases ports)
+- **Ecosystem channels**: deep-researcher (unknown errors)

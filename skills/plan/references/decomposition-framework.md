@@ -26,8 +26,8 @@ Grep all consumers to ensure nothing breaks downstream.
 **Exhaustive consumer tracing**: For every cascade-critical item, grep the ENTIRE
 `src/` directory (and any other source directories) for all references — including
 re-exports, barrel files, type imports, and dynamic imports. A partial grep that
-checks only direct imports will miss transitive consumers. A past failure (F1 below)
-resulted from checking only 5 of 7 consuming files because re-exports through
+checks only direct imports will miss transitive consumers. The recipeforge failure
+(F1 below) resulted from checking only 5 of 7 consuming files because re-exports through
 `index.ts` barrels were not traced.
 
 ---
@@ -79,6 +79,11 @@ just a technical milestone.
   that surfaces it
 - Three consecutive phases build infrastructure before any user value → wrong
   decomposition axis (switch from architecture-based to capability-based)
+- A phase creates user-visible components (display, output, interaction) but no
+  task wires them to the entry point → add an explicit integration task.
+  "Create writeStatusLine()" without "Wire status line to REPL loop" means the
+  feature is built but invisible. If the plan doesn't say "wire X to Y", dev
+  won't do it.
 
 **When this conflicts with other lenses:**
 Sometimes module-based or architecture-based decomposition is genuinely better
@@ -110,10 +115,11 @@ and anti-patterns.
 
 ## Failure Catalog
 
-Real planning failures encountered during pipeline usage. Each entry identifies
-the structural fix that prevents recurrence.
+Real planning failures from project key-learnings. Each entry identifies the
+structural fix that prevents recurrence.
 
 ### F1: Incomplete cascade analysis
+**Project**: recipeforge
 **What happened**: A shared type was modified in Phase 1, but only 5 of 7
 consuming files were updated. The 2 missed files were re-exports through
 `index.ts` barrel files — the cascade trace checked direct imports but not
@@ -122,31 +128,35 @@ transitive consumers.
 including re-exports and barrel files (see "Exhaustive consumer tracing" above).
 
 ### F2: Risk categories too narrow
+**Project**: waveform
 **What happened**: Three risk patterns went unflagged during planning:
 (1) command injection via `exec()` with user-derived arguments,
-(2) `Math.max(...data)` stack overflow on large arrays,
-(3) `as Config` type assertion on API response without runtime validation.
+(2) `Math.max(...waveformData)` stack overflow on large audio files,
+(3) `as WaveformConfig` type assertion on API response without runtime validation.
 None matched the original 5-category risk list.
 **Structural fix**: Risk Lens expanded with 5 additional categories — shell
 command construction, unbound array operations, type assertion without runtime
 validation, version-specific tool behavior, and error message forwarding.
 
 ### F3: Specification honesty gap
-**What happened**: A plan claimed "never expose raw error messages to users"
+**Project**: ai-code-reviewer
+**What happened**: The plan claimed "never expose raw error messages to users"
 as an architectural pattern, but Phase 4b only verified technology feasibility
 claims — not architectural pattern claims. The generated phases.md did not
 enforce the pattern in catch blocks and fallthrough error handlers, leading to
-raw `error.message` leaking to the frontend in API routes.
+raw `error.message` leaking to the frontend in 3 API routes.
 **Structural fix**: Phase 4b now includes step 1b — cross-reference architectural
 pattern claims and verify phase tasks enforce the pattern in every code path,
 including catch blocks and fallthrough cases.
 
 ### F4: Tooling/environment assumptions
+**Projects**: waveform, forge
 **What happened**: Plans assumed standard tool behavior that didn't hold:
-(1) a package manager lockfile format differed between major versions, causing
-CI install failures; (2) a scaffolding tool changed its default template
-structure between versions, breaking assumptions; (3) a linter changed default
-rules between versions, flagging previously-clean code.
+(1) waveform — `pnpm` lockfile format differed between v8 and v9, causing
+CI install failures; (2) forge — `create-next-app` changed its
+default template structure between Next.js 14 and 15, breaking scaffold
+assumptions; (3) waveform — `biome` v1.5→v1.9 changed default lint rules,
+flagging previously-clean code.
 **Structural fix**: Risk Lens now includes "version-specific tool behavior"
 category. Plans that name specific tool versions get a feasibility spot-check
 confirming the assumed behavior matches the pinned version.
@@ -155,14 +165,16 @@ confirming the assumed behavior matches the pinned version.
 
 ## Empirical Sizing Data
 
-| Metric | Observed |
-|--------|----------|
-| Tasks per phase (typical) | 3-6 |
-| Max tasks per phase | 7 (framework integration phases) |
-| Phase splits during /dev | 0 |
-| Phase merges during /dev | 0 |
-| Primary failure mode | Excessive QA findings per phase (AC granularity) |
+From analysis of 28 project key-learnings directories:
+
+| Metric | Observed | Source |
+|--------|----------|--------|
+| Tasks per phase (typical) | 3-6 | recipeforge, forge, waveform |
+| Max tasks per phase | 7 | Framework integration phases |
+| Phase splits during /dev | 0 | All sampled key-learnings |
+| Phase merges during /dev | 0 | All sampled key-learnings |
+| Primary failure mode | 14+ QA findings per phase | forge Phase 4 |
 
 Current sizing heuristics work. If a phase exceeds 6 tasks during design,
-split before /dev. Phases with excessive QA findings indicate insufficient AC
+split before /dev. Phases with 14+ QA findings indicate insufficient AC
 granularity (see Rule 8 in phase-design-principles.md), not wrong phase sizing.

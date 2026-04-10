@@ -54,10 +54,6 @@ case "$ACTIVE_SKILL" in
     CONTEXT="${CONTEXT}Remaining stages:\n"
     CONTEXT="${CONTEXT}- Phase 5: Generate phases.md, create pipeline-state.md, create key-learnings dir, present summary\n"
     ;;
-  polish)
-    CONTEXT="${CONTEXT}Remaining stages:\n"
-    CONTEXT="${CONTEXT}- Stage 7: Synthesize all rounds into polish-report.md, categorize findings, generate feedback action plan\n"
-    ;;
   deploy)
     CONTEXT="${CONTEXT}Remaining stages:\n"
     CONTEXT="${CONTEXT}- Stage 5: Post-deploy verification, pipeline archival, port release, final summary\n"
@@ -65,7 +61,7 @@ case "$ACTIVE_SKILL" in
   fix|hotfix)
     CONTEXT="${CONTEXT}Remaining stages:\n"
     CONTEXT="${CONTEXT}- Stage 4: Verify (build + typecheck + affected tests)\n"
-    CONTEXT="${CONTEXT}- Stage 5: Document (fix-log.md, pipeline-state.md, working-memory signal)\n"
+    CONTEXT="${CONTEXT}- Stage 5: Document (fix-log.md, pipeline-state.md)\n"
     ;;
 esac
 

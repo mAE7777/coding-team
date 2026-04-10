@@ -10,6 +10,7 @@ if [ -z "$CWD" ]; then
 fi
 
 if [ -z "$CWD" ]; then
+  printf '{"suppressOutput": true}\n'
   exit 0
 fi
 
@@ -54,7 +55,13 @@ if [ -n "$MODIFIED_FILES" ]; then
 fi
 
 if [ -n "$WARNINGS" ]; then
-  echo -e "$WARNINGS"
+  # Wrap in JSON so stdout always starts with '{' — defeats the empty/plain-text
+  # feedback synthesis bug in Claude Code 2.1.92 (github #43906) that causes
+  # Stop hooks to trigger a fake user turn and re-run the task.
+  ESCAPED=$(printf '%s' "$WARNINGS" | jq -Rs .)
+  printf '{"systemMessage": %s}\n' "$ESCAPED"
+else
+  printf '{"suppressOutput": true}\n'
 fi
 
 exit 0

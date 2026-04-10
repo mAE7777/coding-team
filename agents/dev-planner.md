@@ -75,7 +75,7 @@ Follow the exploration strategy from `~/.claude/skills/dev/references/plan-mode-
 ### Step 3b: Project Strategy Awareness
 
 Read the `## Project Strategy` section from phases.md (if present). Extract:
-- **Testing Archetype**: A/B/C/D — affects task sizing and verification approach
+- **Testing Archetype**: A/B/C/D/E/F — affects task sizing and verification approach
 - **Verification Mode**: per-phase or incremental — if incremental, note in per-task plans
   that tasks should include verification instructions for the user
 - **AI Feature Inventory**: if present, note which tasks implement AI features and their
