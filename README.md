@@ -1,6 +1,8 @@
 # Claude Code Pipeline
 
-A development pipeline for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview). Six skills that chain together to take a project from research to deployment.
+A development harness for [Claude Code](https://docs.anthropic.com/en/docs/claude-code/overview), built around one position: the field answers AI-code drift with more specs, and I think specs and verification are two different things. A spec is feedforward; it sets the target once and hopes. What bounds drift is a sensor, so the rigor here goes to the intent layer (what exactly to build, confirmed before code) and the verification layer (isolated, evidence-bound checks after it), and the code layer is left to the model. The full argument, what it cannot do, and the experiment that would falsify it: [docs/intent-diff.md](docs/intent-diff.md).
+
+The six skills below are the current implementation; they have carried 40+ of my projects from research to deployment.
 
 ```
 /scout → /plan → /dev → /qa → /deploy
@@ -21,7 +23,7 @@ A development pipeline for [Claude Code](https://docs.anthropic.com/en/docs/clau
 
 ## Where this is going
 
-This is the first version of the pipeline; it carried 40+ projects. The rebuild in progress inverts where the effort goes: all rigor moves to the intent layer (what exactly to build, confirmed with concrete examples before any code) and the verification layer, and the code layer is left to the model. One idea organizes the rebuild, intent-diff: an isolated evaluator reads only the finished code, reconstructs what it actually does as user-facing behavior, guesses what it is for, and that guess gets diffed against the frozen original intent. The full argument, including what the idea cannot do and the experiment that would falsify it, is in [docs/intent-diff.md](docs/intent-diff.md). The v2 skills land here as they finish dogfooding.
+The rebuild in progress makes the intent-diff position structural: intent frozen at the start with concrete examples, an isolated evaluator reconstructing behavior from the finished code alone, the harness computing the drift delta, and deterministic gates owning rot and security with zero human attention. The v2 skills land here as they finish dogfooding.
 
 ## Architecture
 
