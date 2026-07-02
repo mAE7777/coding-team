@@ -12,12 +12,16 @@ A development pipeline for [Claude Code](https://docs.anthropic.com/en/docs/clau
 
 | Command | Purpose |
 |---------|---------|
-| `/scout` | Research — investigate technologies, map existing codebases, evaluate options |
+| `/scout` | Research: investigate technologies, map existing codebases, evaluate options |
 | `/plan` | Generate a structured `phases.md` with tasks, acceptance criteria, and validation gates |
-| `/dev N` | Implement phase N — each task runs in a fresh subagent for clean context |
+| `/dev N` | Implement phase N; each task runs in a fresh subagent for clean context |
 | `/qa N` | Adversarial validation across 8 categories (regression, functional, security, a11y, etc.) |
 | `/fix` | Targeted bug fixes scoped to ~15 files, with root cause analysis |
 | `/deploy` | Deployment readiness verification, changelog generation, and release execution |
+
+## Where this is going
+
+This is the first version of the pipeline; it carried 40+ projects. The rebuild in progress inverts where the effort goes: all rigor moves to the intent layer (what exactly to build, confirmed with concrete examples before any code) and the verification layer, and the code layer is left to the model. One idea organizes the rebuild, intent-diff: an isolated evaluator reads only the finished code, reconstructs what it actually does as user-facing behavior, guesses what it is for, and that guess gets diffed against the frozen original intent. The full argument, including what the idea cannot do and the experiment that would falsify it, is in [docs/intent-diff.md](docs/intent-diff.md). The v2 skills land here as they finish dogfooding.
 
 ## Architecture
 

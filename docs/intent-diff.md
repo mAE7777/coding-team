@@ -1,0 +1,19 @@
+# Intent-diff
+
+Everyone answers AI-code drift the same way right now: more specs. Richer intent documents, formal requirement grammars, spec-driven everything. I think specs and verification are two different things, and most of the effort is going into the wrong one.
+
+A spec is feedforward. You set the target once, at the start, and hope. It has no way to notice that what got built has been sliding away from what you meant. The sliding is real: you ask for a thing, the model builds smoothly, each step looks reasonable, and three cycles later the product is coherent, usable, and quietly not what you wanted. Meanwhile every layer of spec you add is one more artifact to manage and one more thing you stop reading. Spec-maximalism dies of the exact fatigue it was invented to fix.
+
+Vibe coding is an open control loop. The fix for an open loop is not a bigger plan at the front. It is a sensor.
+
+Here is the sensor. After each build cycle, a fresh session with no memory of the work looks at the finished code. It gets exactly two other things: the one-line goal, and who the product is for. It never sees the specs, the plan, or the dev conversation. It describes what the code actually does, as user-facing behavior, and every claim has to be grounded in a real input and output, a real trace, a rendered screen. Then it does the part that matters: it guesses what all this is for.
+
+That guess is the instrument. If the implementation drifted, the guess comes out wrong, and a person who cannot read a line of code feels "no, that is not what this was for" in one glance. Your intent was frozen at the start, in writing, immutable. The harness diffs the reconstruction against that frozen anchor and surfaces the delta. The human judges the delta. Nobody re-reads a spec.
+
+Why the isolation matters: a model reviewing work with the spec in hand anchors on the spec and confirms it, because confirming is the easy path. LLM judges also measurably prefer their own outputs. So the dev session never grades itself, and the evaluator never reads the plan. It characterizes the code the way you would characterize a legacy codebase someone else left behind: loyally, from the artifact alone.
+
+What this sensor cannot see, stated plainly: structural rot and security. Drift and rot are two different diseases. A behavior-level read will faithfully report that input X gives output Y and never notice the auth check is bypassable or the internals have turned to mud. Those go to deterministic gates instead: linters, complexity thresholds, clone detection, dependency and secret scans. Zero human attention. Attention is the scarce resource; spend it on intent, and spend none of it on what a machine can check.
+
+The bet underneath: as models get better, coding becomes guiding instead of forcing. The human's job compresses into knowing what they want and noticing when the machine is somewhere else. Tools should be built for that job, and rigor should move to where the human still is: before the code, in what gets confirmed, and after the code, in what gets verified. The code itself belongs to the model.
+
+Honest status. The components are validated: characterization testing is old and proven, and judge isolation measurably reduces bias. The assembled loop is unproven. The strongest evidence against it is forty years of automation-bias research: humans are poor monitors, and any review loop tends to decay into one more approve button. The design fights that with frequency, grounded traces, and machine-computed deltas, but fighting is not winning. So there is an experiment: two cohorts building comparable projects, one with the loop and one without, scored on intent fidelity against the frozen anchor, drift caught per cycle, vigilance against planted discrepancies, and the rot metrics the loop should not move. If it loses, I drop it.
